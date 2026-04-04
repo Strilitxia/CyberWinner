@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "submission": {
+      "title": "Submission",
+      "description": "A user submission for the winner showcase.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the user."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time of submission."
+        }
+      },
+      "required": ["name", "userId", "timestamp"]
+    },
+    "winner": {
+      "title": "Winner",
+      "description": "The current winner of the showcase.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the winner."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the winner."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the winner was updated."
+        }
+      },
+      "required": ["name", "userId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "submissions": {
+      "schema": { "$ref": "submission" },
+      "description": "Collection of user submissions."
+    },
+    "winners": {
+      "schema": { "$ref": "winner" },
+      "description": "The current winner record."
+    }
+  }
+}
