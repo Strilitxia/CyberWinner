@@ -1,9 +1,10 @@
 {
-  piKey: "AIzaSyByAOkWbotWX4J-qmqraNJCNH0jPT-tKAA",
-  authDomain: "cyberwinner.firebaseapp.com",
-  projectId: "cyberwinner",
-  storageBucket: "cyberwinner.firebasestorage.app",
-  messagingSenderId: "326242857646",
-  appId: "1:326242857646:web:2007659c719b6c30e6733f",
-  measurementId: "G-N1HHHTZ2BF"
+  "apiKey": "AIzaSyByAOkWbotWX4J-qmqraNJCNH0jPT-tKAA",
+  "authDomain": "cyberwinner.firebaseapp.com",
+  "projectId": "cyberwinner",
+  "storageBucket": "cyberwinner.firebasestorage.app",
+  "messagingSenderId": "326242857646",
+  "appId": "1:326242857646:web:2007659c719b6c30e6733f",
+  "measurementId": "G-N1HHHTZ2BF",
+  "firestoreDatabaseId": "(default)"
 }
