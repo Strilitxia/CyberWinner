@@ -141,7 +141,7 @@ const WinnerListPage = () => {
 
   const fetchData = async () => {
     try {
-      const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'), limit(10));
+      const q = query(collection(db, 'submissions'), orderBy('timestamp', 'asc'), limit(10));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSubmissions(data);
