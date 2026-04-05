@@ -139,8 +139,13 @@ const WinnerListPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Sign in anonymously to allow reading submissions based on security rules
+    signInAnonymously(auth).catch(console.error);
+
     // Listen for recent submissions
-    const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'), limit(10));
+    const path = 'submissions';
+    const q = query(collection(db, path), orderBy('timestamp', 'desc'), limit(10));
+    
     const unsubscribeSubmissions = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
@@ -154,6 +159,9 @@ const WinnerListPage = () => {
         return data;
       });
       
+      setLoading(false);
+    }, (error) => {
+      console.error('Firestore Sync Error:', error);
       setLoading(false);
     });
 
