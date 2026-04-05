@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ReactNode, FormEvent } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { db, auth } from './firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, limit, setDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, limit, setDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, User, Hash, Send, Shield, Loader2, AlertCircle } from 'lucide-react';
@@ -137,38 +137,59 @@ const MainPage = () => {
 const WinnerListPage = () => {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  const fetchData = async () => {
+    try {
+      const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'), limit(10));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSubmissions(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Data Fetch Error:', error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Sign in anonymously to allow reading submissions based on security rules
     signInAnonymously(auth).catch(console.error);
-
-    // Listen for recent submissions
-    const path = 'submissions';
-    const q = query(collection(db, path), orderBy('timestamp', 'desc'), limit(10));
     
-    const unsubscribeSubmissions = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      setSubmissions((prev) => {
-        // Play sound if a new submission is detected (and it's not the initial load)
-        if (prev.length > 0 && data.length > 0 && data[0].id !== prev[0].id) {
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
-          audio.volume = 0.5;
-          audio.play().catch(e => console.log('Audio playback blocked by browser:', e));
-        }
-        return data;
-      });
-      
-      setLoading(false);
-    }, (error) => {
-      console.error('Firestore Sync Error:', error);
-      setLoading(false);
-    });
+    // Initial fetch
+    fetchData();
+
+    // Refresh every 7 seconds
+    const interval = setInterval(() => {
+      console.log('REFRESHING_DATA...');
+      fetchData();
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const winner = submissions.length > 0 ? submissions[0] : null;
+    
+    if (winner && !audioRef.current) {
+      // Create and play looping sound when a winner is found
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+      audio.volume = 0.3;
+      audio.loop = true;
+      audio.play().catch(e => console.log('Audio playback blocked by browser:', e));
+      audioRef.current = audio;
+    } else if (!winner && audioRef.current) {
+      // Stop sound if no winner
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
 
     return () => {
-      unsubscribeSubmissions();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
-  }, []);
+  }, [submissions]);
 
   const winner = submissions.length > 0 ? submissions[0] : null;
 
