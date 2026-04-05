@@ -18,8 +18,8 @@ const Layout = ({ children }: { children: ReactNode }) => (
       </Link>
       <div className="flex gap-6">
         <Link to="/" className="font-mono text-sm hover:text-cyber-orange transition-colors">SUBMIT</Link>
-        <Link to="/admin" className="font-mono text-sm hover:text-cyber-orange transition-colors flex items-center gap-1">
-          <Shield size={14} /> ADMIN
+        <Link to="/winner-list" className="font-mono text-sm hover:text-cyber-orange transition-colors flex items-center gap-1">
+          <Trophy size={14} /> WINNER LIST
         </Link>
       </div>
     </nav>
@@ -134,68 +134,41 @@ const MainPage = () => {
   );
 };
 
-const AdminPage = () => {
-  const [winner, setWinner] = useState<{ name: string, userId: string } | null>(null);
+const WinnerListPage = () => {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Sign in anonymously for admin access in this demo
-    signInAnonymously(auth).catch(console.error);
-
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-    });
-
-    // Listen for current winner
-    const unsubscribeWinner = onSnapshot(doc(db, 'winners', 'current'), (doc) => {
-      if (doc.exists()) {
-        const newData = doc.data() as any;
-        setWinner((prev) => {
-          // Play sound if winner changed and it's not the initial load
-          if (prev && prev.userId !== newData.userId) {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
-            audio.volume = 0.5;
-            audio.play().catch(e => console.log('Audio playback blocked by browser:', e));
-          }
-          return newData;
-        });
-      }
-    });
-
     // Listen for recent submissions
     const q = query(collection(db, 'submissions'), orderBy('timestamp', 'desc'), limit(10));
     const unsubscribeSubmissions = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setSubmissions(data);
+      
+      setSubmissions((prev) => {
+        // Play sound if a new submission is detected (and it's not the initial load)
+        if (prev.length > 0 && data.length > 0 && data[0].id !== prev[0].id) {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(e => console.log('Audio playback blocked by browser:', e));
+        }
+        return data;
+      });
+      
       setLoading(false);
     });
 
     return () => {
-      unsubscribeAuth();
-      unsubscribeWinner();
       unsubscribeSubmissions();
     };
   }, []);
 
-  const setAsWinner = async (sub: any) => {
-    try {
-      await setDoc(doc(db, 'winners', 'current'), {
-        name: sub.name,
-        userId: sub.userId,
-        updatedAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('Error setting winner:', error);
-    }
-  };
+  const winner = submissions.length > 0 ? submissions[0] : null;
 
   if (loading) {
     return (
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="animate-spin text-cyber-orange w-12 h-12" />
-        <p className="font-mono text-cyber-orange animate-pulse">INITIALIZING_ADMIN_CONSOLE...</p>
+        <p className="font-mono text-cyber-orange animate-pulse">SYNCING_WINNER_DATA...</p>
       </div>
     );
   }
@@ -216,7 +189,7 @@ const AdminPage = () => {
         <h2 className="text-sm text-cyber-orange/70 mb-2">Current Champion</h2>
         {winner ? (
           <motion.div
-            key={winner.userId}
+            key={winner.id}
             initial={{ scale: 1.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="space-y-2"
@@ -225,7 +198,7 @@ const AdminPage = () => {
             <div className="font-mono text-xs text-cyber-orange/50">ID: {winner.userId}</div>
           </motion.div>
         ) : (
-          <div className="text-2xl font-mono text-cyber-orange/30 italic">NO_CHAMPION_SELECTED</div>
+          <div className="text-2xl font-mono text-cyber-orange/30 italic">AWAITING_CHAMPION...</div>
         )}
       </motion.div>
 
@@ -249,12 +222,11 @@ const AdminPage = () => {
                   <div className="font-bold uppercase">{sub.name}</div>
                   <div className="font-mono text-[10px] text-cyber-orange/50">ID: {sub.userId}</div>
                 </div>
-                <button 
-                  onClick={() => setAsWinner(sub)}
-                  className="text-[10px] font-mono border border-cyber-orange/50 px-3 py-1 hover:bg-cyber-orange hover:text-black transition-all"
-                >
-                  SET_WINNER
-                </button>
+                {sub.id === winner?.id && (
+                  <div className="text-[10px] font-mono text-cyber-orange border border-cyber-orange px-3 py-1">
+                    WINNER
+                  </div>
+                )}
               </motion.div>
             ))
           )}
@@ -272,7 +244,7 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<MainPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/winner-list" element={<WinnerListPage />} />
         </Routes>
       </Layout>
     </Router>
